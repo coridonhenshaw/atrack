@@ -121,9 +121,13 @@ Probably.
 
 Initial Release
 
+#### 1
+
+Added support for pathological cases where the client updates its IP address more frequently than the command list can be executed.
+
 ## License
 
-Copyright 2021 Coridon Henshaw
+Copyright 2022 Coridon Henshaw
 
 Permission is granted to all natural persons to execute, distribute, and/or modify this software (including its documentation) subject to the following terms:
 

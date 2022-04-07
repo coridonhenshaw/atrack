@@ -15,7 +15,7 @@ type ConfigurationFile struct {
 	XMLName        xml.Name       `xml:"Atrack"`
 	ListenAddress  ListenAddress  `xml:"ListenAddress"`
 	TLSCredentials TLSCredentials `xml:"TLSCredentials"`
-	PIDFile        PIDFile        `xml: PIDFile`
+	PIDFile        PIDFile        `xml:"PIDFile"`
 	Credentials    Credentials    `xml:"Credentials"`
 	IPv4Commands   []IPv4Commands `xml:"IPv4Commands"`
 	IPv6Commands   []IPv6Commands `xml:"IPv6Commands"`
@@ -88,7 +88,10 @@ func ReloadConfig(RuntimeConfig *RuntimeConfigStruct) error {
 	}
 
 	var CF ConfigurationFile
-	xml.Unmarshal(CFBytes, &CF)
+	err = xml.Unmarshal(CFBytes, &CF)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	RuntimeConfig.ListenAddr = CF.ListenAddress.Address
 	RuntimeConfig.UserID = CF.Credentials.UserID
@@ -111,6 +114,10 @@ func ReloadConfig(RuntimeConfig *RuntimeConfigStruct) error {
 		SE.Exec = i.Command
 		SE.Timeout = time.Second * time.Duration(i.Timeout)
 		RuntimeConfig.IPv6Script.Script = append(RuntimeConfig.IPv6Script.Script, SE)
+	}
+
+	if len(RuntimeConfig.IPv4Script.Script)+len(RuntimeConfig.IPv6Script.Script) == 0 {
+		log.Fatal("No commands specified.")
 	}
 
 	if len(RuntimeConfig.PIDFilename) == 0 {

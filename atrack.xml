@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Atrack>
+  <ListenAddress Value="127.0.0.1:8003"/>
+  <Credentials UserID="testu" Password="testp"/>
+  <IPv4Commands Exec="sleep 10" Timeout = "1000"/>
+<!--  <IPv6Commands Exec="foo $IPv6"/> -->
+</Atrack>

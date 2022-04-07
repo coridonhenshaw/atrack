@@ -1,1 +1,4 @@
-atrack.xml
+.gitignore
+atrack
+atrack.pid
+

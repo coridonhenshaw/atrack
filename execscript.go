@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
-	"encoding/csv"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/google/shlex"
 )
 
 func ExecTimeout(Cmd string, Timeout time.Duration) error {
@@ -22,9 +23,7 @@ func ExecTimeout(Cmd string, Timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), Timeout)
 	defer cancel()
 
-	r := csv.NewReader(strings.NewReader(Cmd))
-	r.Comma = ' '
-	record, err := r.Read()
+	record, err := shlex.Split(Cmd)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,9 +46,27 @@ func ExecTimeout(Cmd string, Timeout time.Duration) error {
 }
 
 func ExecuteQueue(RuntimeConfig *RuntimeConfigStruct, Script *TriggeredScript) {
-	for {
-		_ = <-Script.Trigger
+	RuntimeConfig.Mutex.RLock()
+	var Last4 = RuntimeConfig.IPv4.String()
+	var Last6 = RuntimeConfig.IPv6.String()
+	RuntimeConfig.Mutex.RUnlock()
 
+	for {
+		for {
+			_ = <-Script.Trigger
+
+			// Ignore link blips of less than 3 seconds
+			time.Sleep(time.Duration(3 * time.Second))
+
+			RuntimeConfig.Mutex.RLock()
+			var Flag4 = (Last4 != RuntimeConfig.IPv4.String())
+			var Flag6 = (Last6 != RuntimeConfig.IPv6.String())
+			RuntimeConfig.Mutex.RUnlock()
+
+			if Flag4 || Flag6 {
+				break
+			}
+		}
 		var ExecList []ScriptEntry
 
 		RuntimeConfig.Mutex.RLock()
@@ -65,10 +82,13 @@ func ExecuteQueue(RuntimeConfig *RuntimeConfigStruct, Script *TriggeredScript) {
 			ExecList = append(ExecList, S)
 		}
 
+		Last4 = RuntimeConfig.IPv4.String()
+		Last6 = RuntimeConfig.IPv6.String()
+
 		RuntimeConfig.Mutex.RUnlock()
 
 		for _, Cmd := range ExecList {
-			fmt.Println("Exec:", Cmd.Exec)
+			fmt.Println(Last4, Last6, "Exec:", Cmd.Exec)
 			fmt.Println()
 
 			err := ExecTimeout(Cmd.Exec, Cmd.Timeout)
@@ -76,5 +96,6 @@ func ExecuteQueue(RuntimeConfig *RuntimeConfigStruct, Script *TriggeredScript) {
 				log.Fatal(err)
 			}
 		}
+		time.Sleep(time.Duration(7 * time.Second))
 	}
 }
